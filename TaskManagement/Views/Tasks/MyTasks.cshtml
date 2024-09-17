@@ -1,0 +1,50 @@
+﻿
+@{
+    ViewData["Title"] = "MyTasks";
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                My Assign Tasks
+            </div>
+            <div class="card-body table-responsive">
+                <table id="tasksTable" class="display" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                            <th>Due Date</th>
+                            @* <th>Actions</th> *@
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('#tasksTable').DataTable({
+                "processing": true,
+                "serverSide": true,
+                "ajax": {
+                    "url": "/api/Tasks/me/list",
+                    "type": "POST"
+
+                },
+                "columns": [
+                    { "data": "Title" },
+                    { "data": "Status" },
+                    { "data": "Priority" },
+                    { "data": "DueDate" }
+                ]
+            });
+        });
+    </script>
+}

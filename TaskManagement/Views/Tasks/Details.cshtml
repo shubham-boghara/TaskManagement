@@ -1,0 +1,233 @@
+﻿@model TaskManagement.Dtos.UpdateTasksDto
+@{
+    ViewData["Title"] = "Details";
+}
+
+<button type="button" class="btn btn-sm btn-secondary mb-2" data-bs-toggle="offcanvas" data-bs-target="#assignTaskOffCanvas" aria-controls="assignTaskOffCanvas">
+    Assign Task
+</button>
+
+<div class="row">
+    <div class="col-md-6">
+    <div class="card">
+        <div class="card-header">
+            Update Task
+        </div>
+        <div class="card-body">
+            <form id="taskForm" method="post" novalidate>
+                <input asp-for="TaskId" type="hidden" class="form-control" />
+                <div class="form-group">
+                    <label for="Title">Title</label>
+                    <input asp-for="Title" class="form-control" />
+                    <span asp-validation-for="Title" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="Description">Description</label>
+                    <textarea asp-for="Description" class="form-control"></textarea>
+                    <span asp-validation-for="Description" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="Status">Status</label>
+                    <input asp-for="Status" class="form-control" />
+                    <span asp-validation-for="Status" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="DueDate">Due Date</label>
+                    <input asp-for="DueDate" class="form-control" type="date" />
+                    <span asp-validation-for="DueDate" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="PriorityId">Priority</label>
+                    <select asp-for="PriorityId" class="form-control">
+                    </select>
+                    <span asp-validation-for="PriorityId" class="text-danger"></span>
+                </div>
+
+                <button type="submit" class="btn btn-sm mt-1 btn-primary">Update Task</button>
+            </form>
+        </div>
+    </div>
+    </div>
+</div>
+
+<div class="offcanvas offcanvas-end" tabindex="-1" id="assignTaskOffCanvas" aria-labelledby="assignTaskOffCanvasLabel">
+    <div class="offcanvas-header">
+        <h5 id="assignTaskOffCanvasLabel">Assign Task to User</h5>
+        <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+
+                    </div>
+                    <div class="card-body">
+                        <form id="assignTaskForm">
+                            <div class="mb-3">
+                                <label for="AssignedToUserId" class="form-label">Assign to User</label>
+                                <select class="form-control" id="AssignedToUserId" name="AssignedToUserId">
+                                    <option value="">Select User</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-primary">Assign</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @* <table id="usersTable" class="display" style="width:100%">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+        </table> *@
+    </div>
+</div>
+
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        $(document).ready(function () {
+            $("#taskForm").submit(function (e) {
+                e.preventDefault();
+                updateTask();
+            });
+
+
+
+
+            $("#assignTaskForm").submit(function (e) {
+                e.preventDefault();
+
+                assignTaskForm();
+            });
+
+            selectionTaskPriority();
+
+            selectionTaskUsers();
+            
+        });
+
+        function updateTask() {
+           
+            var obj = {
+                TaskId: $("#TaskId").val(),
+                Title: $("#Title").val(),
+                Description: $("#Description").val(),
+                Status: $("#Status").val(),
+                DueDate: $("#DueDate").val() ? new Date($("#DueDate").val()).toISOString() : null,
+                PriorityId: $("#PriorityId").val()
+
+            }
+
+            ajaxCrud('PUT', '/api/Tasks', obj, function (response) {
+                if (response.success) {
+                    alert(response['message']);
+                }
+                
+            }, function (xhr, status, error) {
+               
+            });
+        }
+
+
+
+
+        function findTask() {
+
+            let Id = $("#TaskId").val();
+
+            ajaxCrud('GET', '/api/Tasks/' + `${Id}`, null, function (response) {
+                if (response.success) {
+                    let data = response['data'];
+
+                    $("#Title").val(data['Title']);
+                    $("#Description").val(data['Description']);
+                    $("#Status").val(data['Status']);
+                    let dueDate = data['DueDate'] ? new Date(data['DueDate']).toISOString().split('T')[0] : '';
+                    $("#DueDate").val(dueDate);
+                    $("#PriorityId").val(data['PriorityId']);
+
+                   
+                    //window.location.href = "/Tasks/Details/" + response.data.TaskId;
+                }
+                
+            }, function (xhr, status, error) {
+                
+            });
+        }
+
+        function selectionTaskPriority() {
+
+            ajaxCrud('GET', '/api/tasks/taskpriority', null, function (response) {
+                if (response.success) {
+
+                    let data = response['data'];
+
+                    let str = ``;
+                    for (let i = 0; i < data.length; i++) {
+                        let o = data[i];
+                        str += `<option value='${o['PriorityId']}'>${o['Name']}</option>`;
+                    }
+                    $("#PriorityId").html(str);
+
+                    findTask();
+                }
+
+            }, function (xhr, status, error) {
+
+            });
+        }
+
+        function assignTaskForm(){
+
+            let obj = {
+                TaskId : $("#TaskId").val(),
+                AssignedToUserId: $("#AssignedToUserId").val()
+            }
+
+            ajaxCrud('POST', '/api/tasks/assign/user', obj, function (response) {
+                if (response.success) {
+                    alert(response['message']);
+                }
+
+            }, function (xhr, status, error) {
+
+            });
+
+        }
+
+        function selectionTaskUsers() {
+
+            ajaxCrud('GET', '/api/tasks/users', null, function (response) {
+                if (response.success) {
+
+                    let data = response['data'];
+
+                    let str = ``;
+                    for (let i = 0; i < data.length; i++) {
+                        let o = data[i];
+                        str += `<option value='${o['Id']}'>${o['UserName']}</option>`;
+                    }
+                    $("#AssignedToUserId").html(str);
+
+                    
+                }
+
+            }, function (xhr, status, error) {
+
+            });
+        }
+    </script>
+}
